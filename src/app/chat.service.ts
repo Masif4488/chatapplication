@@ -11,29 +11,27 @@ export class ChatService {
   constructor(private http: Http) { }
 
   getChatByRoom(room) {
-    // tslint:disable-next-line: no-shadowed-variable
-    console.log('yeyeyeyeyey');
+    return new Promise((resolve, reject) => {
+      this.http.get('/chat/' + room)
+        .pipe(map(res => res.json()))
+        .subscribe(res => {
+          resolve(res);
+        }, (err) => {
+          reject(err);
+        });
+    });
+  }
 
-    return new Promise((resolve , reject) => {
-      this.http.get('/chat/' + room).pipe(map(res => res.json())).subscribe(res => {
-        console.log('bbbbbb');
-        resolve(res);
-      }, (err) => {
-        reject(err);
-      });
-    });
-  }
   saveChat(data) {
-     // tslint:disable-next-line: no-shadowed-variable
-    return new Promise((resolve , reject) => {
-      this.http.post('/chat', data)
-      .pipe(map(res => res.json()))
-      .subscribe(res => {
-        console.log('aaaaaaa');
-        resolve(res);
-      }, (err) => {
-        reject(err);
-      });
+    return new Promise((resolve, reject) => {
+        this.http.post('/chat', data)
+          .pipe(map(res => res.json()))
+          .subscribe(res => {
+            resolve(res);
+          }, (err) => {
+            reject(err);
+          });
     });
   }
+
 }

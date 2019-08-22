@@ -9,59 +9,61 @@ import * as io from 'socket.io-client';
 })
 export class ChatComponent implements OnInit, AfterViewChecked {
 
-  @ViewChild('scrollMe', { static: true }) myScrollContainer: ElementRef;
+  @ViewChild('scrollMe', { static: true }) private myScrollContainer: ElementRef;
 
-  chats: any ;
+  chats: any;
   joinned = false;
-  newUser = {nickname: '', room: '' };
-  msgData = {room : '' , nickname : '' , message: ''};
+  newUser = { nickname: '', room: '' };
+  msgData = { room: '', nickname: '', message: '' };
   socket = io('http://localhost:4000');
 
-
-  constructor(private chatService: ChatService) { }
+  constructor(private chatService: ChatService) {
+  }
 
   ngOnInit() {
-      const user = JSON.parse(localStorage.getItem('user'));
-      if (user !== null) {
-        this.getChatByRoom(user.room);
-        this.msgData = {room : user.room, nickname: user.nickname, message: user.message};
-        this.joinned = true;
+    const  user = JSON.parse(localStorage.getItem('user'));
+    if ( user !== null) {
+      this.getChatByRoom(user.room);
+      this.msgData = { room: user.room, nickname: user.nickname, message: '' };
+      this.joinned = true;
+      this.scrollToBottom();
+    }
+    this.socket.on('new-message', function(data) {
+      if (data.message.room === JSON.parse(localStorage.getItem('user'))) {
+        const messageData = new Object(data.message);
+        this.chats.push(messageData);
+        this.msgData = { room: user.room, nickname: user.nickname, message: '' };
         this.scrollToBottom();
       }
-      this.socket.on('new-message', (data) => {
-          if (data.message.room === JSON.parse(localStorage.getItem('user'))) {
-            console.log('hello everyone' + data.message);
-            this.chats.push(data.message);
-            this.msgData = {room : user.room, nickname : user.nickname, message : '' };
-            this.scrollToBottom();
-          // tslint:disable-next-line: align
-          }
-      });
+    }.bind(this));
   }
 
   ngAfterViewChecked() {
     this.scrollToBottom();
   }
 
-  scrollToBottom() {
+  scrollToBottom(): void {
     try {
       this.myScrollContainer.nativeElement.scrollTop = this.myScrollContainer.nativeElement.scrollHeight;
-    } catch (err) {}
+    } catch (err) { }
   }
-  getChatByRoom(room: any) {
+
+  getChatByRoom(room) {
     this.chatService.getChatByRoom(room).then((res) => {
-      this.chats = room;
+      this.chats = res;
     }, (err) => {
       console.log(err);
     });
   }
+
   joinRoom() {
     const date = new Date();
     localStorage.setItem('user', JSON.stringify(this.newUser));
-    this.msgData = {room : this.newUser.room , nickname : this.newUser.nickname, message : ''};
-    this.joinned = true ;
+    this.getChatByRoom(this.newUser.room);
+    this.msgData = { room: this.newUser.room, nickname: this.newUser.nickname, message: '' };
+    this.joinned = true;
     // tslint:disable-next-line: max-line-length
-    this.socket.emit('save-message', {room : this.newUser.room, nickname : this.newUser.nickname, message : 'Join this Room', updated_at : date});
+    this.socket.emit('save-message', { room: this.newUser.room, nickname: this.newUser.nickname, message: 'Join this room', updated_at: date });
   }
 
   sendMessage() {
@@ -71,11 +73,15 @@ export class ChatComponent implements OnInit, AfterViewChecked {
       console.log(err);
     });
   }
+
   logout() {
     const date = new Date();
     const user = JSON.parse(localStorage.getItem('user'));
-    this.socket.emit('save-message',{room : user.room, nickname : user.nickname, message : 'left this room', updated_at: date});
+    this.socket.emit('save-message', { room: user.room, nickname: user.nickname, message: 'Left this room', updated_at: date });
     localStorage.removeItem('user');
+    console.log(user);
     this.joinned = false;
   }
+
+
 }
